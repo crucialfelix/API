@@ -159,6 +159,28 @@ API {
 		oscResponders.do(_.remove);
 		oscResponders = nil;
 	}		
+	*prMountOSCforHTTP { arg srcID, recvPort;
+		^OSCFunc({ arg msg, time, addr, recvPort;
+			var token, path, args, api, apiName, fullpath, m, blank;
+			# token, fullpath ... args = msg;
+			# blank, apiName ... path = fullpath.asString.split($/);
+			{
+				api = this.load(apiName);
+				m = api.prFindHandler(path);
+			}.try({ arg error;
+				addr.sendMsg('/API/http/not_found', token, fullpath);
+				error.error;
+			});
+			if(m.notNil,{
+				api.async(path, args, { arg result;
+					addr.sendMsg('/API/http/reply', token, result);
+				}, { arg error;
+					addr.sendMsg('/API/http/error', token, error.asString);
+				});
+			});
+		}, '/API/http/call', srcID, recvPort);
+	}
+
 	// maybe better separated by API
 	*registerListener { arg callsFromNetAddr,sendResponseToNetAddr,responseCmdName;
 		listeners[callsFromNetAddr] = [sendResponseToNetAddr,responseCmdName];
