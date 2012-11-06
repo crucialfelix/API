@@ -40,27 +40,30 @@ def fiddle():
 def call(path):
 
     data = request.form['data']
-
-    args = []
-    msg = OSCMessage("/API/http/call")
+    token = time.time().hex()
+    args = [str(token), "/%s" % path]
 
     if data:
         try:
             data = simplejson.loads(data)
         except Exception,e:
-            # raise bad request
-            return ("Bad request", 400, [])
+            return ("Bad request %s %s" % (e,data), 400, [])
         else:
             for a in data.get('msg',[]):
                 args.append(a)
-                msg.append(a)
 
-    #client.send(msg)
+    msg = OSCMessage("/API/http/call")
+    for a in args:
+        msg.append(a)
+
+    try:
+        sc.send(msg)
+    except Exception,e:
+        print "send error",msg,e
+        return ("%s : %s" % (msg,e), 500, [] )
 
     # just saying I sent it
-    return "%s %s" % (path,args)
-
-
+    return "sent: %s %s" % (path,args)
 
 
 if __name__ == "__main__":
