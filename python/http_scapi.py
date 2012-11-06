@@ -1,17 +1,12 @@
 
 from flask import Flask, request, render_template, abort
 import simplejson
+import time
 
 # requires pyOSC
-# https://trac.v2.nl/wiki/pyOSC
 from OSC import OSCClient,OSCMessage, OSCServer
-
-
-import sys
 import atexit
 
-import string,cgi,time
-from os import curdir, sep
 from optparse import OptionParser
 parser = OptionParser()
 parser.add_option("--host",dest="host",help="HTTP host",type=str,default="127.0.0.1")
