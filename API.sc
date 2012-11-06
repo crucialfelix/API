@@ -171,13 +171,14 @@ API {
 				m = api.prFindHandler(path);
 			}.try({ arg error;
 				addr.sendMsg('/API/http/not_found', token, fullpath);
-				error.error;
+				error.reportError();
 			});
 			if(m.notNil,{
 				api.async(path, args, { arg result;
 					addr.sendMsg('/API/http/reply', token, result);
 				}, { arg error;
-					addr.sendMsg('/API/http/error', token, error.asString);
+					addr.sendMsg('/API/http/error', token, error.errorString() );
+					error.reportError();
 				});
 			});
 		}, '/API/http/call', srcID, recvPort);
