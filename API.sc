@@ -51,19 +51,25 @@ API {
 	}
 
 	// calling
-	async { arg selector, args, callback;
+	async { arg selector, args, callback, onError;
 		var m;
 		m = this.prFindHandler(selector);
-		m.valueArray([callback] ++ args);
+		if(onError.notNil,{
+			{
+				m.valueArray([callback] ++ args);
+			}.try(onError);
+		},{
+			m.valueArray([callback] ++ args);
+		});
 	}
-	sync { arg selector, args;
+	sync { arg selector, args, onError;
 		var result, c = Condition.new;
 		c.test = false;
 		this.async(selector, args, { arg r;
 			result = r;
 			c.test = true;
 			c.signal;
-		});
+		}, onError);
 		c.wait;
 		^result
 	}
