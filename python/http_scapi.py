@@ -12,13 +12,15 @@ import atexit
 
 import string,cgi,time
 from os import curdir, sep
+from optparse import OptionParser
+parser = OptionParser()
+parser.add_option("--host",dest="host",help="HTTP host",type=str,default="127.0.0.1")
+parser.add_option("--port",dest="port",help="HTTP port",type=int,default="5000")
+parser.add_option("--sc_host",dest="sc_host",help="SC OSC host",type=str,default="127.0.0.1")
+parser.add_option("--sc_port",dest="sc_port",help="SC OSC port",type=int,default="57120")
 
-# defaults
-http_port = 5000
-http_url = "127.0.0.1"
+(options, args) = parser.parse_args()
 
-osc_host = "127.0.0.1"
-osc_port = 12000
 
 debug = True
 
