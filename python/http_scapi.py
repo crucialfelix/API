@@ -22,10 +22,11 @@ parser.add_option("--sc_port",dest="sc_port",help="SC OSC port",type=int,default
 (options, args) = parser.parse_args()
 
 
-debug = True
-
-
 app = Flask(__name__)
+app.debug = False
+
+
+
 
 @app.route('/')
 def index():
@@ -61,24 +62,22 @@ def call(path):
 
 
 
-if __name__ == '__main__':
 
-    # will get better args
-    if sys.argv[1:]:
-        http_port = int(sys.argv[1])
+if __name__ == "__main__":
 
-    # debug
-    app.debug = debug
+    # return_port
+    sc = OSCClient()
+    sc.connect( (options.sc_host, options.sc_port) )
 
-    try:
-        sc = OSCServer( (osc_host,osc_port) )
-        #atexit.register(sc.close)
-        client = OSCClient(sc)
-        print 'starting HTTP to SuperCollider API bridge...'
-        app.run()
-    except KeyboardInterrupt:
-        print '^C received, shutting down server'
-        #server.socket.close()
+    # atexit runs whenever python shuts down
+    # so it always disconnects no matter what happens
+    def off():
+        print "\nclosing OSC"
         sc.close()
+    atexit.register(off)
+
+    print 'SuperCollider HTTP API'
+    app.config['SERVER_NAME'] = "%s:%s" % (options.host,options.port)
+    app.run()
 
 
