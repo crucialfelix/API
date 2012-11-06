@@ -162,8 +162,10 @@ API {
 	*prMountOSCforHTTP { arg srcID, recvPort;
 		^OSCFunc({ arg msg, time, addr, recvPort;
 			var token, path, args, api, apiName, fullpath, m, blank;
-			# token, fullpath ... args = msg;
+			# blank, token, fullpath ... args = msg;
 			# blank, apiName ... path = fullpath.asString.split($/);
+			// only supports api/method
+			path = path.first.asSymbol;
 			{
 				api = this.load(apiName);
 				m = api.prFindHandler(path);
