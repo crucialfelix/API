@@ -9,6 +9,10 @@ API {
 	*new { arg name;
 		^(all.at(name.asSymbol) ?? {super.new.init(name.asSymbol)});
 	}
+	*load { arg name;
+		// for now, will load it from /apis/
+		^all.at(name.asSymbol) ?? { Error("API" + name + "not found").throw; }
+	}
 	init { arg n;
 		name = n;
 		functions = Dictionary.new;
@@ -63,11 +67,11 @@ API {
 		c.wait;
 		^result
 	}
-	*async { arg apiname, path, args, callback;
-		this(apiname).async(path, args, callback);
+	*async { arg apiname, path, args, callback, onError;
+		this.load(apiname).async(path, args, callback, onError);
 	}
-	*sync { arg apiname, path, args;
-		^this(apiname).sync(path, args);
+	*sync { arg apiname, path, args, onError;
+		^this.load(apiname).sync(path, args, onError);
 	}
 
 
