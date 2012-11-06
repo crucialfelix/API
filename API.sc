@@ -43,11 +43,43 @@ API {
 	}	
 	
 	// calling
-	call { arg selector ... args;
+	async { arg selector, args, callback;
 		var m;
-		m = functions[selector] ?? {Error(selector.asString + "not found in API" + name).throw};
-		^m.valueArray(args)
+		m = this.prFindHandler(selector);
+		m.valueArray([callback] ++ args);
 	}
+	sync { arg selector, args;
+		var result, c = Condition.new;
+		c.test = false;
+		this.async(selector, args, { arg r;
+			result = r;
+			c.test = true;
+			c.signal;
+		});
+		c.wait;
+		^result
+	}
+	*async { arg apiname, path, args, callback;
+		this(apiname).async(path, args, callback);
+	}
+	*sync { arg apiname, path, args;
+		^this(apiname).sync(path, args);
+	}
+
+
+	// keep old style calling with no callback
+	// and immediate return
+	// '/apiname/cmdName', arg1, arg2
+	*call { arg selector ... args;
+		var blank,app,cmd;
+		# blank,app ... cmd = selector.asString.split($/);
+		^this(app).call(cmd.join($/).asSymbol,*args);
+	}
+	call { arg selector ... args;
+		var m = this.prFindHandler(selector);
+		^m.valueArray(args);
+	}
+
 	// create a function
 	func { arg selector ... args;
 		^{ arg ... ags; this.call(selector,*(args ++ ags)) }
@@ -56,12 +88,12 @@ API {
 	doesNotUnderstand { arg selector ... args;
 		^this.call(selector,*args)
 	}
-	// '/app/cmdName', arg1, arg2
-	*call { arg selector ... args;
-		var blank,app,cmd;
-		# blank,app ... cmd = selector.asString.split($/);
-		^this(app).call(cmd.join($/).asSymbol,*args)
-	}	
+
+	prFindHandler { arg path;
+		^functions[path] ?? {
+			Error(path.asString + "not found in API" + name).throw
+		};
+	}
 
 	// OSC
 	mountOSC { arg baseCmdName,addr;
