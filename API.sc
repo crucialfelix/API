@@ -31,17 +31,21 @@ API {
 	}
 	exposeMethods { arg obj, selectors;
 		selectors.do({ arg m;
-			this.add(m,{ arg ... args; obj.performList(m,args) })
-		})
-	}
-	exposeAllExcept { arg obj,selectors=#[];
-		obj.class.methods.do({ arg meth;
-			if(selectors.includes(meth.name).not,{
-				this.add(meth.name,{ arg ... args; obj.performList(meth.name,args) })
+			this.add(m,{ arg callback ... args;
+				callback.value(obj.performList(m,args));
 			})
 		})
-	}	
-	
+	}
+	exposeAllExcept { arg obj, selectors=#[];
+		obj.class.methods.do({ arg meth;
+			if(selectors.includes(meth.name).not,{
+				this.add(meth.name,{ arg callback ... args;
+					callback.value( obj.performList(meth.name,args) )
+				})
+			})
+		})
+	}
+
 	// calling
 	async { arg selector, args, callback;
 		var m;
