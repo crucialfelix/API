@@ -9,6 +9,10 @@ API {
 	*new { arg name;
 		^(all.at(name.asSymbol) ?? {super.new.init(name.asSymbol)});
 	}
+	*load { arg name;
+		// for now, will load it from /apis/
+		^all.at(name.asSymbol) ?? { Error("API" + name + "not found").throw; }
+	}
 	init { arg n;
 		name = n;
 		functions = Dictionary.new;
@@ -31,23 +35,65 @@ API {
 	}
 	exposeMethods { arg obj, selectors;
 		selectors.do({ arg m;
-			this.add(m,{ arg ... args; obj.performList(m,args) })
-		})
-	}
-	exposeAllExcept { arg obj,selectors=#[];
-		obj.class.methods.do({ arg meth;
-			if(selectors.includes(meth.name).not,{
-				this.add(meth.name,{ arg ... args; obj.performList(meth.name,args) })
+			this.add(m,{ arg callback ... args;
+				callback.value(obj.performList(m,args));
 			})
 		})
-	}	
-	
-	// calling
-	call { arg selector ... args;
-		var m;
-		m = functions[selector] ?? {Error(selector.asString + "not found in API" + name).throw};
-		^m.valueArray(args)
 	}
+	exposeAllExcept { arg obj, selectors=#[];
+		obj.class.methods.do({ arg meth;
+			if(selectors.includes(meth.name).not,{
+				this.add(meth.name,{ arg callback ... args;
+					callback.value( obj.performList(meth.name,args) )
+				})
+			})
+		})
+	}
+
+	// calling
+	async { arg selector, args, callback, onError;
+		var m;
+		m = this.prFindHandler(selector);
+		if(onError.notNil,{
+			{
+				m.valueArray([callback] ++ args);
+			}.try(onError);
+		},{
+			m.valueArray([callback] ++ args);
+		});
+	}
+	sync { arg selector, args, onError;
+		var result, c = Condition.new;
+		c.test = false;
+		this.async(selector, args, { arg r;
+			result = r;
+			c.test = true;
+			c.signal;
+		}, onError);
+		c.wait;
+		^result
+	}
+	*async { arg apiname, path, args, callback, onError;
+		this.load(apiname).async(path, args, callback, onError);
+	}
+	*sync { arg apiname, path, args, onError;
+		^this.load(apiname).sync(path, args, onError);
+	}
+
+
+	// keep old style calling with no callback
+	// and immediate return
+	// '/apiname/cmdName', arg1, arg2
+	*call { arg selector ... args;
+		var blank,app,cmd;
+		# blank,app ... cmd = selector.asString.split($/);
+		^this(app).call(cmd.join($/).asSymbol,*args);
+	}
+	call { arg selector ... args;
+		var m = this.prFindHandler(selector);
+		^m.valueArray(args);
+	}
+
 	// create a function
 	func { arg selector ... args;
 		^{ arg ... ags; this.call(selector,*(args ++ ags)) }
@@ -56,12 +102,12 @@ API {
 	doesNotUnderstand { arg selector ... args;
 		^this.call(selector,*args)
 	}
-	// '/app/cmdName', arg1, arg2
-	*call { arg selector ... args;
-		var blank,app,cmd;
-		# blank,app ... cmd = selector.asString.split($/);
-		^this(app).call(cmd.join($/).asSymbol,*args)
-	}	
+
+	prFindHandler { arg path;
+		^functions[path] ?? {
+			Error(path.asString + "not found in API" + name).throw
+		};
+	}
 
 	// OSC
 	mountOSC { arg baseCmdName,addr;
