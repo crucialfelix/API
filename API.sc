@@ -160,7 +160,7 @@ API {
 			(assn.value +/+ "apis" +/+ name.asString ++ ".api.scd").pathMatch.do { arg path;
 				var api;
 				{
-					api = path.loadPath;
+					api = path.load;
 				}.try({ arg err;
 					err.errorString.error;
 					^nil
