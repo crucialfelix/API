@@ -5,9 +5,10 @@ API {
 	classvar <all;
 	var <name, functions;
 	var oscResponders;
-	
+
 	*new { arg name;
-		^(all.at(name.asSymbol) ?? {super.new.init(name.asSymbol)});
+		// get or create
+		^(all.at(name.asSymbol) ?? { super.new.init(name.asSymbol) })
 	}
 	*load { arg name;
 		// for now, will load it from /apis/
@@ -16,15 +17,15 @@ API {
 	init { arg n;
 		name = n;
 		functions = Dictionary.new;
-		all.put(name,this);
+		all.put(name, this);
 	}
 	*initClass {
 		all = IdentityDictionary.new;
 	}
 
 	// defining
-	add { arg selector,func;
-		functions.put(selector,func)
+	add { arg selector, func;
+		functions.put(selector, func)
 	}
 	addAll { arg dict;
 		functions.putAll(dict)
@@ -60,6 +61,7 @@ API {
 		});
 	}
 	sync { arg selector, args, onError;
+		// must be inside a Routine
 		var result, c = Condition.new;
 		c.test = false;
 		this.async(selector, args, { arg r;
@@ -82,8 +84,8 @@ API {
 	// no async, no Routine required
 	// '/apiname/cmdName', arg1, arg2
 	*call { arg selector ... args;
-		var blank,app,cmd;
-		# blank,app ... cmd = selector.asString.split($/);
+		var blank, app, cmd;
+		# blank, app ... cmd = selector.asString.split($/);
 		^this.load(app).call(cmd.join($/).asSymbol,*args);
 	}
 	call { arg selector ... args;
@@ -105,7 +107,7 @@ API {
 	prFindHandler { arg path;
 		^functions[path] ?? {
 			Error(path.asString + "not found in API" + name).throw
-		};
+		}
 	}
 
 
@@ -172,10 +174,5 @@ API {
 	printOn { arg stream;
 		stream << this.class.asString << "('" << name << "')"
 	}
-	
-
 }
 
-
-	
-	
