@@ -29,9 +29,6 @@ API {
 	addAll { arg dict;
 		functions.putAll(dict)
 	}
-	make { arg func;
-		this.addAll(Environment.make(func))
-	}
 	exposeMethods { arg obj, selectors;
 		selectors.do({ arg m;
 			this.add(m,{ arg callback ... args;
@@ -93,10 +90,6 @@ API {
 		^m.valueArray(args);
 	}
 
-	// create a function
-	func { arg selector ... args;
-		^{ arg ... ags; this.call(selector,*(args ++ ags)) }
-	}
 	// respond as though declared functions were native methods to this object
 	doesNotUnderstand { arg selector ... args;
 		^this.call(selector,*args)
@@ -152,26 +145,6 @@ API {
 		}, '/API/http/call', srcID, recvPort);
 	}
 
-	// interrogating
-	functionNames {
-		^functions.keys
-	}
-			
-	*prResponsePath { arg addr;
-		var l;
-		if(l.notNil,{
-			^[l[0],l[1] ? defaultResponse]
-		});
-		^[addr,defaultResponse]
-	}
-	*prFormatResult { arg result;
-		^if(result.isString,{
-			result = [result];
-		},{
-			result = result.asArray;
-		});
-	}	
-		
 	printOn { arg stream;
 		stream << this.class.asString << "('" << name << "')"
 	}
