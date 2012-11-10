@@ -54,6 +54,7 @@ API {
 
 	// calling
 	async { arg selector, args, callback, onError;
+		// passes the result to the callback
 		var m;
 		m = this.prFindHandler(selector);
 		if(onError.notNil,{
@@ -65,6 +66,8 @@ API {
 		});
 	}
 	sync { arg selector, args, onError;
+		// pauses thread if needed and returns
+		// the result directly.
 		// must be inside a Routine
 		var result, c = Condition.new;
 		c.test = false;
@@ -88,8 +91,10 @@ API {
 	}
 
 
-	// calls and returns immediately
+	// returns immediately
 	// no async, no Routine required
+	// the handler must not fork or defer
+	// before calling the callback
 	// "apiname.cmdName", arg1, arg2
 	*call { arg path ... args;
 		var name, selector;
