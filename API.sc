@@ -11,8 +11,9 @@ API {
 		^(all.at(name.asSymbol) ?? { super.new.init(name.asSymbol) })
 	}
 	*load { arg name;
-		// for now, will load it from /apis/
-		^all.at(name.asSymbol) ?? { Error("API" + name + "not found").throw; }
+		^all.at(name.asSymbol)
+			?? { this.prLoadAPI(name) }
+			?? { Error("API" + name + "not found").throw; }
 	}
 	init { arg n;
 		name = n;
@@ -104,6 +105,21 @@ API {
 		})
 	}
 
+	*prLoadAPI { arg name;
+		Main.packages.do({ arg assn;
+			(assn.value +/+ "apis/" ++ name.asString ++ ".api.scd").pathMatch.do { arg path;
+				var api;
+				{
+					api = path.loadPath;
+				}.try({ arg err;
+					err.errorString.error;
+					^nil
+				});
+				^API(name).addAll(api);
+			};
+		});
+		^nil
+	}
 	prFindHandler { arg path;
 		^functions[path] ?? {
 			Error(path.asString + "not found in API" + name).throw
