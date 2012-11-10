@@ -136,7 +136,12 @@ API {
 	*mountDuplexOSC { arg srcID, recvPort;
 		/*
 			/API/call : client_id, request_id, fullpath ... args
-
+				client_id and request_id : are used to identify return messages
+					and are up to the implementation of the api consumer
+					client_id would usually be a specific web browser, program or other independent entity
+					request_id would be a unique id for that request for that client
+				fullpath:  apiname.methodKey
+					dot separated to make it clear that its not an OSC path
 			/API/reply : client_id, request_id, result
 			/API/not_found : client_id, request_id, fullpath
 			/API/error : client_id, request_id, errorString
