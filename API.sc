@@ -8,11 +8,15 @@ API {
 
 	*new { arg name;
 		// get or create
-		^(all.at(name.asSymbol) ?? { super.new.init(name.asSymbol) })
+		^(all.at(name.asSymbol) ?? { this.prNew(name) })
+	}
+	*prNew { arg name;
+		^super.new.init(name.asSymbol)
 	}
 	*load { arg name;
-		// for now, will load it from /apis/
-		^all.at(name.asSymbol) ?? { Error("API" + name + "not found").throw; }
+		^all.at(name.asSymbol)
+			?? { this.prLoadAPI(name) }
+			?? { Error("API" + name + "not found").throw; }
 	}
 	init { arg n;
 		name = n;
@@ -50,6 +54,7 @@ API {
 
 	// calling
 	async { arg selector, args, callback, onError;
+		// passes the result to the callback
 		var m;
 		m = this.prFindHandler(selector);
 		if(onError.notNil,{
@@ -61,6 +66,8 @@ API {
 		});
 	}
 	sync { arg selector, args, onError;
+		// pauses thread if needed and returns
+		// the result directly.
 		// must be inside a Routine
 		var result, c = Condition.new;
 		c.test = false;
@@ -72,26 +79,55 @@ API {
 		c.wait;
 		^result
 	}
-	*async { arg apiname, path, args, callback, onError;
-		this.load(apiname).async(path, args, callback, onError);
+	*async { arg path, args, callback, onError;
+		var name, selector;
+		# name, selector = path.split($.);
+		this.load(name).async(selector, args, callback, onError);
 	}
-	*sync { arg apiname, path, args, onError;
-		^this.load(apiname).sync(path, args, onError);
+	*sync { arg path, args, onError;
+		var name, selector;
+		# name, selector = path.split($.);
+		^this.load(name).sync(selector, args, onError);
 	}
 
 
-	// calls and returns immediately
+	// returns immediately
 	// no async, no Routine required
-	// '/apiname/cmdName', arg1, arg2
-	*call { arg selector ... args;
-		var blank, app, cmd;
-		# blank, app ... cmd = selector.asString.split($/);
-		^this.load(app).call(cmd.join($/).asSymbol,*args);
+	// the handler must not fork or defer
+	// before calling the callback
+	// "apiname.cmdName", arg1, arg2
+	*call { arg path ... args;
+		var name, selector;
+		# name, selector = path.split($.);
+		^this.load(name).call(selector, *args);
 	}
 	call { arg selector ... args;
 		var m = this.prFindHandler(selector), result;
 		m.valueArray([{ arg r; result = r; }] ++ args);
 		^result
+	}
+
+	// querying
+	*apis {
+		var out = API.all.keys.copy();
+		Main.packages.do({ arg assn;
+			(assn.value +/+ "apis" +/+ "*.api.scd").pathMatch.do { arg path;
+				out.add( this.prNameFromPath(path) );
+			};
+		});
+		^out.as(Array);
+	}
+	selectors {
+		^functions.keys
+	}
+	*allPaths {
+		var out = List.new;
+		all.keysValuesDo({ arg name, api;
+			api.selectors.do { arg selector;
+				out.add( name.asString ++ "." ++ selector.asString );
+			}
+		});
+		^out
 	}
 
 	// for ease of scripting
@@ -104,8 +140,43 @@ API {
 		})
 	}
 
+	*loadAll { arg forceReload=true;
+		Main.packages.do({ arg assn;
+			(assn.value +/+ "apis" +/+ "*.api.scd").pathMatch.do({ arg path;
+				var api, name;
+				name = this.prNameFromPath(path);
+				if(forceReload or: {all[name].isNil}, {
+					{
+						api = path.load;
+						API.prNew(name).addAll(api);
+					}.try({ arg err;
+						("While loading" + name).error;
+						err.errorString.postln;
+					});
+				});
+			});
+		});
+	}
+	*prNameFromPath { arg path;
+		^path.split(Platform.pathSeparator).last.split($.).first
+	}
+	*prLoadAPI { arg name;
+		Main.packages.do({ arg assn;
+			(assn.value +/+ "apis" +/+ name.asString ++ ".api.scd").pathMatch.do { arg path;
+				var api;
+				{
+					api = path.load;
+				}.try({ arg err;
+					err.errorString.error;
+					^nil
+				});
+				^API(name).addAll(api);
+			};
+		});
+		^nil
+	}
 	prFindHandler { arg path;
-		^functions[path] ?? {
+		^functions[path.asSymbol] ?? {
 			Error(path.asString + "not found in API" + name).throw
 		}
 	}
