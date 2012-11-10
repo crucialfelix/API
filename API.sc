@@ -171,7 +171,7 @@ API {
 		^nil
 	}
 	prFindHandler { arg path;
-		^functions[path] ?? {
+		^functions[path.asSymbol] ?? {
 			Error(path.asString + "not found in API" + name).throw
 		}
 	}
