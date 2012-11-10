@@ -144,8 +144,8 @@ API {
 		OSCdef('API_DUPLEX', { arg msg, time, addr, recvPort;
 			var client_id, request_id, path, args, api, apiName, fullpath, m, ignore;
 			# ignore, client_id, request_id, fullpath ... args = msg;
-			# ignore, apiName ... path = fullpath.asString.split($/);
-			path = path.first.asSymbol;
+			# apiName, path = fullpath.asString.split($.);
+			path = path.asSymbol;
 
 			// [msg,time,addr,recvPort].debug;
 			// [client_id, request_id, fullpath, blank, apiName, path].debug;
