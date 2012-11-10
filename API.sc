@@ -76,21 +76,25 @@ API {
 		c.wait;
 		^result
 	}
-	*async { arg apiname, path, args, callback, onError;
-		this.load(apiname).async(path, args, callback, onError);
+	*async { arg path, args, callback, onError;
+		var name, selector;
+		# name, selector = path.split($.);
+		this.load(name).async(selector, args, callback, onError);
 	}
-	*sync { arg apiname, path, args, onError;
-		^this.load(apiname).sync(path, args, onError);
+	*sync { arg path, args, onError;
+		var name, selector;
+		# name, selector = path.split($.);
+		^this.load(name).sync(selector, args, onError);
 	}
 
 
 	// calls and returns immediately
 	// no async, no Routine required
-	// '/apiname/cmdName', arg1, arg2
-	*call { arg selector ... args;
-		var blank, app, cmd;
-		# blank, app ... cmd = selector.asString.split($/);
-		^this.load(app).call(cmd.join($/).asSymbol,*args);
+	// "apiname.cmdName", arg1, arg2
+	*call { arg path ... args;
+		var name, selector;
+		# name, selector = path.split($.);
+		^this.load(name).call(selector, *args);
 	}
 	call { arg selector ... args;
 		var m = this.prFindHandler(selector), result;
