@@ -101,11 +101,13 @@ API {
 		};
 	}
 
-	// OSC
-	mountOSC { arg baseCmdName,addr;
-		// default: this.name, nil addr = from anywhere 
+
+	mountOSC { arg baseCmdName, addr;
+		// simply registers each function in this API as an OSC responder node
+		// baseCmdName : defaults to this.name  ie.  /{this.name}/{path}
+		// addr:  default is nil meaning accept message from anywhere
 		this.unmountOSC;
-		functions.keysValuesDo({ arg k,f;
+		functions.keysValuesDo({ arg k, f;
 			var r;
 			r = OSCresponderNode(addr,
 					("/" ++ (baseCmdName ? name).asString ++ "/" ++ k.asString).asSymbol,
@@ -119,30 +121,45 @@ API {
 	unmountOSC {
 		oscResponders.do(_.remove);
 		oscResponders = nil;
-	}		
-	*prMountOSCforHTTP { arg srcID, recvPort;
-		^OSCFunc({ arg msg, time, addr, recvPort;
-			var token, path, args, api, apiName, fullpath, m, blank;
-			# blank, token, fullpath ... args = msg;
-			# blank, apiName ... path = fullpath.asString.split($/);
-			// only supports api/method
+	}
+
+	// duplex returns results of API calls as a reply OSC message
+	*mountDuplexOSC { arg srcID, recvPort;
+		/*
+			/API/call : client_id, request_id, fullpath ... args
+
+			/API/reply : client_id, request_id, result
+			/API/not_found : client_id, request_id, fullpath
+			/API/error : client_id, request_id, errorString
+		*/
+		OSCdef('API_DUPLEX', { arg msg, time, addr, recvPort;
+			var client_id, request_id, path, args, api, apiName, fullpath, m, ignore;
+			# ignore, client_id, request_id, fullpath ... args = msg;
+			# ignore, apiName ... path = fullpath.asString.split($/);
 			path = path.first.asSymbol;
+
+			// [msg,time,addr,recvPort].debug;
+			// [client_id, request_id, fullpath, blank, apiName, path].debug;
+
 			{
 				api = this.load(apiName);
 				m = api.prFindHandler(path);
 			}.try({ arg error;
-				addr.sendMsg('/API/http/not_found', token, fullpath);
+				addr.sendMsg('/API/not_found', client_id, request_id, fullpath);
 				error.reportError();
 			});
 			if(m.notNil,{
 				api.async(path, args, { arg result;
-					addr.sendMsg('/API/http/reply', token, result);
+					addr.sendMsg('/API/reply', client_id, request_id, result);
 				}, { arg error;
-					addr.sendMsg('/API/http/error', token, error.errorString() );
+					addr.sendMsg('/API/error', client_id, request_id, error.errorString() );
 					error.reportError();
 				});
 			});
-		}, '/API/http/call', srcID, recvPort);
+		}, '/API/call', srcID, recvPort);
+	}
+	*unmountDuplexOSC {
+		OSCdef('API_DUPLEX').free;
 	}
 
 	printOn { arg stream;
