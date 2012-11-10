@@ -78,17 +78,18 @@ API {
 	}
 
 
-	// keep old style calling with no callback
-	// and immediate return
+	// calls and returns immediately
+	// no async, no Routine required
 	// '/apiname/cmdName', arg1, arg2
 	*call { arg selector ... args;
 		var blank,app,cmd;
 		# blank,app ... cmd = selector.asString.split($/);
-		^this(app).call(cmd.join($/).asSymbol,*args);
+		^this.load(app).call(cmd.join($/).asSymbol,*args);
 	}
 	call { arg selector ... args;
-		var m = this.prFindHandler(selector);
-		^m.valueArray(args);
+		var m = this.prFindHandler(selector), result;
+		m.valueArray([{ arg r; result = r; }] ++ args);
+		^result
 	}
 
 	// respond as though declared functions were native methods to this object
