@@ -29,17 +29,18 @@ API {
 	addAll { arg dict;
 		functions.putAll(dict)
 	}
+	// add methods off an object as functions
 	exposeMethods { arg obj, selectors;
 		selectors.do({ arg m;
-			this.add(m,{ arg callback ... args;
-				callback.value(obj.performList(m,args));
+			this.add(m, { arg callback ... args;
+				callback.value(obj.performList(m, args));
 			})
 		})
 	}
 	exposeAllExcept { arg obj, selectors=#[];
 		obj.class.methods.do({ arg meth;
-			if(selectors.includes(meth.name).not,{
-				this.add(meth.name,{ arg callback ... args;
+			if(selectors.includes(meth.name).not, {
+				this.add(meth.name, { arg callback ... args;
 					callback.value( obj.performList(meth.name,args) )
 				})
 			})
