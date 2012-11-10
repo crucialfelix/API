@@ -1,13 +1,14 @@
 
 
 API {
-	
-	classvar <all,<listeners,<>defaultResponse ='/response';
-	var <name,functions;
+
+	classvar <all;
+	var <name, functions;
 	var oscResponders;
-	
+
 	*new { arg name;
-		^(all.at(name.asSymbol) ?? {super.new.init(name.asSymbol)});
+		// get or create
+		^(all.at(name.asSymbol) ?? { super.new.init(name.asSymbol) })
 	}
 	*load { arg name;
 		// for now, will load it from /apis/
@@ -16,34 +17,31 @@ API {
 	init { arg n;
 		name = n;
 		functions = Dictionary.new;
-		all.put(name,this);
+		all.put(name, this);
 	}
 	*initClass {
 		all = IdentityDictionary.new;
-		listeners = Dictionary.new;
 	}
 
 	// defining
-	add { arg selector,func;
-		functions.put(selector,func)
+	add { arg selector, func;
+		functions.put(selector, func)
 	}
 	addAll { arg dict;
 		functions.putAll(dict)
 	}
-	make { arg func;
-		this.addAll(Environment.make(func))
-	}
+	// add methods off an object as functions
 	exposeMethods { arg obj, selectors;
 		selectors.do({ arg m;
-			this.add(m,{ arg callback ... args;
-				callback.value(obj.performList(m,args));
+			this.add(m, { arg callback ... args;
+				callback.value(obj.performList(m, args));
 			})
 		})
 	}
 	exposeAllExcept { arg obj, selectors=#[];
 		obj.class.methods.do({ arg meth;
-			if(selectors.includes(meth.name).not,{
-				this.add(meth.name,{ arg callback ... args;
+			if(selectors.includes(meth.name).not, {
+				this.add(meth.name, { arg callback ... args;
 					callback.value( obj.performList(meth.name,args) )
 				})
 			})
@@ -63,6 +61,7 @@ API {
 		});
 	}
 	sync { arg selector, args, onError;
+		// must be inside a Routine
 		var result, c = Condition.new;
 		c.test = false;
 		this.async(selector, args, { arg r;
@@ -81,117 +80,104 @@ API {
 	}
 
 
-	// keep old style calling with no callback
-	// and immediate return
+	// calls and returns immediately
+	// no async, no Routine required
 	// '/apiname/cmdName', arg1, arg2
 	*call { arg selector ... args;
-		var blank,app,cmd;
-		# blank,app ... cmd = selector.asString.split($/);
-		^this(app).call(cmd.join($/).asSymbol,*args);
+		var blank, app, cmd;
+		# blank, app ... cmd = selector.asString.split($/);
+		^this.load(app).call(cmd.join($/).asSymbol,*args);
 	}
 	call { arg selector ... args;
-		var m = this.prFindHandler(selector);
-		^m.valueArray(args);
+		var m = this.prFindHandler(selector), result;
+		m.valueArray([{ arg r; result = r; }] ++ args);
+		^result
 	}
 
-	// create a function
-	func { arg selector ... args;
-		^{ arg ... ags; this.call(selector,*(args ++ ags)) }
-	}
+	// for ease of scripting
 	// respond as though declared functions were native methods to this object
 	doesNotUnderstand { arg selector ... args;
-		^this.call(selector,*args)
+		if(thisThread.class === Thread, {
+			^this.call(selector,*args)
+		},{
+			^this.sync(selector,args)
+		})
 	}
 
 	prFindHandler { arg path;
 		^functions[path] ?? {
 			Error(path.asString + "not found in API" + name).throw
-		};
+		}
 	}
 
-	// OSC
-	mountOSC { arg baseCmdName,addr;
-		// default: this.name, nil addr = from anywhere 
+
+	mountOSC { arg baseCmdName, addr;
+		// simply registers each function in this API as an OSC responder node
+		// baseCmdName : defaults to this.name  ie.  /{this.name}/{path}
+		// addr:  default is nil meaning accept message from anywhere
 		this.unmountOSC;
-		functions.keysValuesDo({ arg k,f;
+		functions.keysValuesDo({ arg k, f;
 			var r;
 			r = OSCresponderNode(addr,
 					("/" ++ (baseCmdName ? name).asString ++ "/" ++ k.asString).asSymbol,
-					{ arg time,resp,message,addr;
-						var result,returnAddr,returnPath;
-						result = API.prFormatResult( this.call(k,*message[1..]) );
-						# returnAddr,returnPath = API.prResponsePath(addr); 
-						returnAddr.sendMsg(*([returnPath] ++ result));
+					{ arg time, resp, message, addr;
+						this.call(k,*message[1..]);
 					}).add;
 			oscResponders = oscResponders.add( r );
 		});
-		oscResponders = oscResponders.addAll( [
-			// yes, these overwrite any at this addr / path
-			// even if for other APIs, because its the same action
-			// and callback paths are /absolute
-			// may change this
-			OSCresponder(addr,'/API/registerListener',
-				{ arg time,resp,message,addr;
-					var listeningPort,callbackCmdName,blah,hostname;
-					if(message.size == 3,{
-						# blah,listeningPort,callbackCmdName = message;
-					},{
-						# blah, listeningPort = message;
-					});
-					API.registerListener(addr,NetAddr.fromIP(addr.addr,listeningPort),callbackCmdName);
-				}
-			).add,
-			OSCresponder(addr,'/API/call',
-				{ arg time,resp,message,addr;
-					var pathToSendReturnValue, apiCallPath,args,blah,returnAddr,returnPath,result;
-					# blah, pathToSendReturnValue, apiCallPath ... args = message;
-					result = API.prFormatResult( API.call(apiCallPath,*args) );
-					// should support /API/call [returnPath returnIdentifiers] etc.
-					# returnAddr,returnPath = API.prResponsePath(addr);
-					returnAddr.sendMsg( * ([pathToSendReturnValue] ++ result) )
-					
-				}
-			).add
-		]);
 		^oscResponders
 	}
 	unmountOSC {
 		oscResponders.do(_.remove);
 		oscResponders = nil;
-	}		
-	// maybe better separated by API
-	*registerListener { arg callsFromNetAddr,sendResponseToNetAddr,responseCmdName;
-		listeners[callsFromNetAddr] = [sendResponseToNetAddr,responseCmdName];
 	}
-	
-	// interrogating
-	functionNames {
-		^functions.keys
+
+	// duplex returns results of API calls as a reply OSC message
+	*mountDuplexOSC { arg srcID, recvPort;
+		/*
+			/API/call : client_id, request_id, fullpath ... args
+				client_id and request_id : are used to identify return messages
+					and are up to the implementation of the api consumer
+					client_id would usually be a specific web browser, program or other independent entity
+					request_id would be a unique id for that request for that client
+				fullpath:  apiname.methodKey
+					dot separated to make it clear that its not an OSC path
+			/API/reply : client_id, request_id, result
+			/API/not_found : client_id, request_id, fullpath
+			/API/error : client_id, request_id, errorString
+		*/
+		OSCdef('API_DUPLEX', { arg msg, time, addr, recvPort;
+			var client_id, request_id, path, args, api, apiName, fullpath, m, ignore;
+			# ignore, client_id, request_id, fullpath ... args = msg;
+			# apiName, path = fullpath.asString.split($.);
+			path = path.asSymbol;
+
+			// [msg,time,addr,recvPort].debug;
+			// [client_id, request_id, fullpath, blank, apiName, path].debug;
+
+			{
+				api = this.load(apiName);
+				m = api.prFindHandler(path);
+			}.try({ arg error;
+				addr.sendMsg('/API/not_found', client_id, request_id, fullpath);
+				error.reportError();
+			});
+			if(m.notNil,{
+				api.async(path, args, { arg result;
+					addr.sendMsg('/API/reply', client_id, request_id, result);
+				}, { arg error;
+					addr.sendMsg('/API/error', client_id, request_id, error.errorString() );
+					error.reportError();
+				});
+			});
+		}, '/API/call', srcID, recvPort);
 	}
-			
-	*prResponsePath { arg addr;
-		var l;
-		l =listeners[addr];
-		if(l.notNil,{
-			^[l[0],l[1] ? defaultResponse]
-		});
-		^[addr,defaultResponse]
+	*unmountDuplexOSC {
+		OSCdef('API_DUPLEX').free;
 	}
-	*prFormatResult { arg result;
-		^if(result.isString,{
-			result = [result];
-		},{
-			result = result.asArray;
-		});
-	}	
-		
+
 	printOn { arg stream;
 		stream << this.class.asString << "('" << name << "')"
 	}
-	
-
 }
 
-
-	
-	
