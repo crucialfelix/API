@@ -8,7 +8,10 @@ API {
 
 	*new { arg name;
 		// get or create
-		^(all.at(name.asSymbol) ?? { super.new.init(name.asSymbol) })
+		^(all.at(name.asSymbol) ?? { this.prNew(name) })
+	}
+	*prNew { arg name;
+		^super.new.init(name.asSymbol)
 	}
 	*load { arg name;
 		^all.at(name.asSymbol)
