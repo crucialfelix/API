@@ -13,7 +13,7 @@
 
 <div class="container">
 
-<h1 class="heroUnit">jQuery to SuperCollider bridge</h1>
+<h1 class="heroUnit">jQuery to SuperCollider</h1>
 
 <div class="row-fluid">
 	<div class="span7">
@@ -21,7 +21,7 @@
 		<form class="form form-horizontal" id="callform">
 			<div class="control-group">
 				<label class="control-label">path</label>
-				<div class="controls"><input type="text" name="path" value="/blah" /></div>
+				<div class="controls"><input type="text" name="path" value="test.one" /></div>
 			</div>
 			<div class="control-group">
 				<label class="control-label">args</label>
@@ -52,7 +52,7 @@
 			args = $("input[name=args]", this).val();
 		e.preventDefault();
 		if(args) {
-			args = eval(args);
+			args = eval(args); // evil
 		}
 		call(path,args,
 			function(data) {

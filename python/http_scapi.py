@@ -1,4 +1,17 @@
+"""
+    Unfinished python implementation
 
+    This calls the api but does not return results.
+    I was going to block the flask thread until the OSC response had come in,
+    and then return the result to the $.ajax request
+    but this is quite messy.
+
+    could use eventlets, pywebsocket and something like tornado
+
+    but the node.js implementation in supercollider.js is much simpler and faster
+
+
+"""
 from flask import Flask, request, render_template, abort
 import simplejson
 import time
@@ -10,14 +23,15 @@ import atexit
 from optparse import OptionParser
 parser = OptionParser()
 parser.add_option("--host",dest="host",help="HTTP host",type=str,default="127.0.0.1")
-parser.add_option("--port",dest="port",help="HTTP port",type=int,default="5000")
+parser.add_option("--port",dest="port",help="HTTP port",type=int,default=5000)
 parser.add_option("--sc_host",dest="sc_host",help="SC OSC host",type=str,default="127.0.0.1")
-parser.add_option("--sc_port",dest="sc_port",help="SC OSC port",type=int,default="57120")
+parser.add_option("--sc_port",dest="sc_port",help="SC OSC port",type=int,default=57120)
 
 (options, args) = parser.parse_args()
 
 
 app = Flask(__name__)
+app.threaded = True
 app.debug = False
 
 
@@ -47,7 +61,7 @@ def call(path):
             for a in data.get('msg',[]):
                 args.append(a)
 
-    msg = OSCMessage("/API/http/call")
+    msg = OSCMessage("/API/call")
     for a in args:
         msg.append(a)
 
@@ -58,7 +72,22 @@ def call(path):
         return ("%s : %s" % (msg,e), 500, [] )
 
     # just saying I sent it
+
+    # hmm.. this is not multithreaded
+    # print "sent, sleeping"
+    # time.sleep(10)
     return "sent: %s %s" % (path,args)
+    # needs to block this thread till the return message comes back
+
+    # store the token for later responses
+    # or put them in redis
+    # and when responses come then message back to the client
+    # (using what ?)
+
+    # or just block here for now
+    # the token is largest part of message
+    # better to move this stuff to js ?
+
 
 
 if __name__ == "__main__":
@@ -70,7 +99,7 @@ if __name__ == "__main__":
     # atexit runs whenever python shuts down
     # so it always disconnects no matter what happens
     def off():
-        print "\nclosing OSC"
+        print "\nclosing OSC connection"
         sc.close()
     atexit.register(off)
 
