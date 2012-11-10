@@ -92,9 +92,14 @@ API {
 		^result
 	}
 
+	// for ease of scripting
 	// respond as though declared functions were native methods to this object
 	doesNotUnderstand { arg selector ... args;
-		^this.call(selector,*args)
+		if(thisThread.class === Thread, {
+			^this.call(selector,*args)
+		},{
+			^this.sync(selector,args)
+		})
 	}
 
 	prFindHandler { arg path;
