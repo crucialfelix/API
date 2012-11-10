@@ -157,7 +157,7 @@ API {
 	}
 	*prLoadAPI { arg name;
 		Main.packages.do({ arg assn;
-			(assn.value +/+ "apis/" ++ name.asString ++ ".api.scd").pathMatch.do { arg path;
+			(assn.value +/+ "apis" +/+ name.asString ++ ".api.scd").pathMatch.do { arg path;
 				var api;
 				{
 					api = path.loadPath;
