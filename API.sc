@@ -102,6 +102,29 @@ API {
 		^result
 	}
 
+	// querying
+	*apis {
+		var out = API.all.keys.copy();
+		Main.packages.do({ arg assn;
+			(assn.value +/+ "apis" +/+ "*.api.scd").pathMatch.do { arg path;
+				out.add( this.prNameFromPath(path) );
+			};
+		});
+		^out.as(Array);
+	}
+	selectors {
+		^functions.keys
+	}
+	*allPaths {
+		var out = List.new;
+		all.keysValuesDo({ arg name, api;
+			api.selectors.do { arg selector;
+				out.add( name.asString ++ "." ++ selector.asString );
+			}
+		});
+		^out
+	}
+
 	// for ease of scripting
 	// respond as though declared functions were native methods to this object
 	doesNotUnderstand { arg selector ... args;
@@ -112,6 +135,26 @@ API {
 		})
 	}
 
+	*loadAll { arg forceReload=true;
+		Main.packages.do({ arg assn;
+			(assn.value +/+ "apis" +/+ "*.api.scd").pathMatch.do({ arg path;
+				var api, name;
+				name = this.prNameFromPath(path);
+				if(forceReload or: {all[name].isNil}, {
+					{
+						api = path.load;
+						API.prNew(name).addAll(api);
+					}.try({ arg err;
+						("While loading" + name).error;
+						err.errorString.postln;
+					});
+				});
+			});
+		});
+	}
+	*prNameFromPath { arg path;
+		^path.split(Platform.pathSeparator).last.split($.).first
+	}
 	*prLoadAPI { arg name;
 		Main.packages.do({ arg assn;
 			(assn.value +/+ "apis/" ++ name.asString ++ ".api.scd").pathMatch.do { arg path;
