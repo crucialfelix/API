@@ -1,9 +1,9 @@
 
 
 API {
-	
-	classvar <all,<listeners,<>defaultResponse ='/response';
-	var <name,functions;
+
+	classvar <all;
+	var <name, functions;
 	var oscResponders;
 	
 	*new { arg name;
@@ -20,7 +20,6 @@ API {
 	}
 	*initClass {
 		all = IdentityDictionary.new;
-		listeners = Dictionary.new;
 	}
 
 	// defining
@@ -117,42 +116,11 @@ API {
 			var r;
 			r = OSCresponderNode(addr,
 					("/" ++ (baseCmdName ? name).asString ++ "/" ++ k.asString).asSymbol,
-					{ arg time,resp,message,addr;
-						var result,returnAddr,returnPath;
-						result = API.prFormatResult( this.call(k,*message[1..]) );
-						# returnAddr,returnPath = API.prResponsePath(addr); 
-						returnAddr.sendMsg(*([returnPath] ++ result));
+					{ arg time, resp, message, addr;
+						this.call(k,*message[1..]);
 					}).add;
 			oscResponders = oscResponders.add( r );
 		});
-		oscResponders = oscResponders.addAll( [
-			// yes, these overwrite any at this addr / path
-			// even if for other APIs, because its the same action
-			// and callback paths are /absolute
-			// may change this
-			OSCresponder(addr,'/API/registerListener',
-				{ arg time,resp,message,addr;
-					var listeningPort,callbackCmdName,blah,hostname;
-					if(message.size == 3,{
-						# blah,listeningPort,callbackCmdName = message;
-					},{
-						# blah, listeningPort = message;
-					});
-					API.registerListener(addr,NetAddr.fromIP(addr.addr,listeningPort),callbackCmdName);
-				}
-			).add,
-			OSCresponder(addr,'/API/call',
-				{ arg time,resp,message,addr;
-					var pathToSendReturnValue, apiCallPath,args,blah,returnAddr,returnPath,result;
-					# blah, pathToSendReturnValue, apiCallPath ... args = message;
-					result = API.prFormatResult( API.call(apiCallPath,*args) );
-					// should support /API/call [returnPath returnIdentifiers] etc.
-					# returnAddr,returnPath = API.prResponsePath(addr);
-					returnAddr.sendMsg( * ([pathToSendReturnValue] ++ result) )
-					
-				}
-			).add
-		]);
 		^oscResponders
 	}
 	unmountOSC {
@@ -184,11 +152,6 @@ API {
 		}, '/API/http/call', srcID, recvPort);
 	}
 
-	// maybe better separated by API
-	*registerListener { arg callsFromNetAddr,sendResponseToNetAddr,responseCmdName;
-		listeners[callsFromNetAddr] = [sendResponseToNetAddr,responseCmdName];
-	}
-	
 	// interrogating
 	functionNames {
 		^functions.keys
@@ -196,7 +159,6 @@ API {
 			
 	*prResponsePath { arg addr;
 		var l;
-		l =listeners[addr];
 		if(l.notNil,{
 			^[l[0],l[1] ? defaultResponse]
 		});
