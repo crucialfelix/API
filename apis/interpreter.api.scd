@@ -5,7 +5,7 @@
 		var result;
 		result = thisProcess.interpreter.interpret(code.asString);
 		// lists and dicts supported later
-		if(result.isSimpleNumber.not,{
+		if(result.isNumber.not,{
 			result = result.asString
 		});
 		reply.value( result.asString );
