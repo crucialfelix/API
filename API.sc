@@ -235,7 +235,9 @@ API {
 			});
 			if(m.notNil,{
 				api.async(path, args, { arg result;
-					addr.sendMsg('/API/reply', client_id, request_id, result);
+					// reply is JSON {'result': result }
+					addr.sendMsg('/API/reply', client_id, request_id,
+						JSON.stringify( (result:result) ));
 				}, { arg error;
 					addr.sendMsg('/API/error', client_id, request_id, error.errorString() );
 					error.reportError();
