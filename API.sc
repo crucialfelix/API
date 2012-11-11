@@ -223,9 +223,6 @@ API {
 			# apiName, path = fullpath.asString.split($.);
 			path = path.asSymbol;
 
-			// [msg,time,addr,recvPort].debug;
-			// [client_id, request_id, fullpath, blank, apiName, path].debug;
-
 			{
 				api = this.load(apiName);
 				m = api.prFindHandler(path);
