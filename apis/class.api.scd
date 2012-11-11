@@ -23,14 +23,16 @@ var k = { arg klass; klass.asSymbol.asClass };
 	helpFile: { arg reply, klass;
 		var path, body;
 		klass = k.value(klass);
-		path = klass.helpFilePath;
-		if(path.notNil,{
-			path = path.copyToEnd(7); // remove file://
-			body = File.open(path, "r").readAllString();
-			reply.value( body );
-		},{
-			reply.value( nil );
-		})
+		{
+			path = klass.helpFilePath;
+			if(path.notNil,{
+				path = path.copyToEnd(7); // remove file://
+				body = File.open(path, "r").readAllString();
+				reply.value( body );
+			},{
+				reply.value( nil );
+			})
+		}.defer
 	},
 	subclasses: { arg reply, klass;
 		reply.value( k.value(klass).subclasses.collect(_.asString) )
