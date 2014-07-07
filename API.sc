@@ -117,6 +117,16 @@ API {
         });
         ^out.as(Array);
     }
+    *atPath { arg path;
+        var name, selector;
+        # name, selector = path.asString.split($.);
+        ^[this.load(name), selector]
+    }
+    *findHandler { arg path;
+        var api, selector;
+        # api, selector = this.atPath(path);
+        ^api.prFindHandler(selector)
+    }
     selectors {
         ^functions.keys
     }
