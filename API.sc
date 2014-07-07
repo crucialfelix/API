@@ -16,7 +16,7 @@ API {
     *load { arg name;
         ^all.at(name.asSymbol)
             ?? { this.prLoadAPI(name) }
-            ?? { Error("API" + name + "not found").throw; }
+            ?? { Error("API" + name.asCompileString + "not found").throw; }
     }
     init { arg n;
         name = n;
@@ -81,12 +81,12 @@ API {
     }
     *async { arg path, args, callback, onError;
         var name, selector;
-        # name, selector = path.split($.);
+        # name, selector = path.asString.split($.);
         this.load(name).async(selector, args, callback, onError);
     }
     *sync { arg path, args, onError;
         var name, selector;
-        # name, selector = path.split($.);
+        # name, selector = path.asString.split($.);
         ^this.load(name).sync(selector, args, onError);
     }
 
@@ -98,7 +98,7 @@ API {
     // "apiname.cmdName", arg1, arg2
     *call { arg path ... args;
         var name, selector;
-        # name, selector = path.split($.);
+        # name, selector = path.asString.split($.);
         ^this.load(name).call(selector, *args);
     }
     call { arg selector ... args;
@@ -170,6 +170,7 @@ API {
                 {
                     api = path.load;
                 }.try({ arg err;
+                    ("While loading" + name).error;
                     err.errorString.error;
                     ^nil
                 });
@@ -180,7 +181,7 @@ API {
     }
     prFindHandler { arg path;
         ^functions[path.asSymbol] ?? {
-            Error(path.asString + "not found in API" + name).throw
+            Error(path.asString.asCompileString + "not found in:" + name.asCompileString).throw
         }
     }
 
@@ -230,7 +231,7 @@ API {
                 api = this.load(apiName);
                 m = api.prFindHandler(path);
             }.try({ arg error;
-                addr.sendMsg('/API/not_found', client_id, request_id, fullpath);
+                addr.sendMsg('/API/not_found', client_id, request_id, error.errorString);
                 error.reportError();
             });
             if(m.notNil,{
@@ -253,4 +254,3 @@ API {
         stream << this.class.asString << "('" << name << "')"
     }
 }
-
