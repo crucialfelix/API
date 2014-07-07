@@ -109,10 +109,10 @@ API {
 
     // querying
     *apis {
-        var out = API.all.keys.copy();
+        var out = API.all.keys.as(Set);
         Main.packages.do({ arg assn;
             (assn.value +/+ "apis" +/+ "*.api.scd").pathMatch.do { arg path;
-                out.add( this.prNameFromPath(path) );
+                out.add(this.prNameFromPath(path).asSymbol);
             };
         });
         ^out.as(Array);
@@ -141,6 +141,9 @@ API {
     }
 
     *loadAll { arg forceReload=true;
+        if(forceReload, {
+            this.initClass;
+        });
         Main.packages.do({ arg assn;
             (assn.value +/+ "apis" +/+ "*.api.scd").pathMatch.do({ arg path;
                 var api, name;
