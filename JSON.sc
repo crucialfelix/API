@@ -11,7 +11,7 @@ JSON {
         var out;
 
         if(obj.isString, {
-            ^obj.asCompileString.replace("\n", JSON.nl).replace("\t", JSON.tab);
+            ^obj.asCompileString.reject(_.isControl).replace("\n", JSON.nl).replace("\t", JSON.tab);
          });
         if(obj.class === Symbol, {
             ^JSON.stringify(obj.asString)
