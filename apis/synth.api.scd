@@ -43,7 +43,7 @@ var cb = { arg reply, msg, result;
 		var rsp = OSCpathResponder(s.addr,
 			['/n_set', nodeID, argIndex],
 			{ arg time, r, msg;
-				if(rsp === r,{
+				if(rsp === r, {
 					reply.value(msg.at(3));
 					r.remove;
 				})

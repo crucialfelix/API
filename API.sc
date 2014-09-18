@@ -46,7 +46,7 @@ API {
         obj.class.methods.do({ arg meth;
             if(selectors.includes(meth.name).not, {
                 this.add(meth.name, { arg callback ... args;
-                    callback.value( obj.performList(meth.name,args) )
+                    callback.value( obj.performList(meth.name, args) )
                 })
             })
         })
@@ -57,11 +57,11 @@ API {
         // passes the result to the callback
         var m;
         m = this.prFindHandler(selector);
-        if(onError.notNil,{
+        if(onError.notNil, {
             {
                 m.valueArray([callback] ++ args);
             }.try(onError);
-        },{
+        }, {
             m.valueArray([callback] ++ args);
         });
     }
@@ -144,9 +144,9 @@ API {
     // respond as though declared functions were native methods to this object
     doesNotUnderstand { arg selector ... args;
         if(thisThread.class === Thread, {
-            ^this.call(selector,*args)
-        },{
-            ^this.sync(selector,args)
+            ^this.call(selector, *args)
+        }, {
+            ^this.sync(selector, args)
         })
     }
 
@@ -206,7 +206,7 @@ API {
             r = OSCresponderNode(addr,
                     ("/" ++ (baseCmdName ? name).asString ++ "/" ++ k.asString).asSymbol,
                     { arg time, resp, message, addr;
-                        this.call(k,*message[1..]);
+                        this.call(k, *message[1..]);
                     }).add;
             oscResponders = oscResponders.add( r );
         });
@@ -244,7 +244,7 @@ API {
                 addr.sendMsg('/API/not_found', client_id, request_id, error.errorString);
                 error.reportError();
             });
-            if(m.notNil,{
+            if(m.notNil, {
                 api.async(path, args, { arg result;
                     // reply is JSON {'result': result }
                     addr.sendMsg('/API/reply', client_id, request_id,

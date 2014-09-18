@@ -1,11 +1,11 @@
 
 JSON {
 
-    classvar <tab,<nl;
+    classvar <tab, <nl;
 
     *initClass {
-        tab = [$\\,$\\,$t].as(String);
-        nl = [$\\,$\\,$n].as(String);
+        tab = [$\\, $\\, $t].as(String);
+        nl = [$\\, $\\, $n].as(String);
     }
     *stringify { arg obj;
         var out;
@@ -22,7 +22,7 @@ JSON {
             obj.keysValuesDo({ arg key, value;
                 out.add( key.asString.asCompileString ++ ":" + JSON.stringify(value) );
             });
-            ^("{" ++ (out.join(",")) ++ "}");
+            ^("{" ++ (out.join(", ")) ++ "}");
         });
 
         if(obj.isNil, {
@@ -49,7 +49,7 @@ JSON {
         if(obj.isKindOf(SequenceableCollection), {
             ^"[" ++ obj.collect({ arg sub;
                         JSON.stringify(sub)
-                    }).join(",")
+                    }).join(", ")
                 ++ "]";
         });
 
@@ -65,6 +65,9 @@ JSON {
 
 
     /*
+
+
+http://json-sans-eval.googlecode.com/svn/trunk/src/json_sans_eval.js
 
     *parse { arg string;
 

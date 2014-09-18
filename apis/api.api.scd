@@ -6,7 +6,7 @@
 	paths: { arg reply, apiName;
 		if(apiName.notNil, {
 			reply.value(API.load(apiName).selectors.as(Array));
-		},{
+		}, {
 			API.loadAll;
 			reply.value(API.allPaths);
 		})

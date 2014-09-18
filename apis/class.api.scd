@@ -25,11 +25,11 @@ var k = { arg klass; klass.asSymbol.asClass };
 		klass = k.value(klass);
 		{
 			path = klass.helpFilePath;
-			if(path.notNil,{
+			if(path.notNil, {
 				path = path.copyToEnd(7); // remove file://
 				body = File.open(path, "r").readAllString();
 				reply.value( body );
-			},{
+			}, {
 				reply.value( nil );
 			})
 		}.defer

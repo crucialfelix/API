@@ -16,7 +16,7 @@
 		var func, result;
 		func = thisProcess.interpreter.compile(code.asString);
 		result = func.play(outbus, fadeTime, addAction);
-		if(result.isKindOf(Synth),{
+		if(result.isKindOf(Synth), {
 			result = result.nodeID;
 		});
 		reply.value( JSON.stringify(('result':result)) );

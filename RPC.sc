@@ -14,24 +14,24 @@ RPC { // Remote procedure call
     }
     init { arg n;
         name = n;
-        all.put(name,this);
+        all.put(name, this);
     }
     *initClass {
         all = IdentityDictionary.new;
     }
     receiveAPI_ { arg obj;
-        if(obj.isString or: obj.isKindOf(Symbol),{
+        if(obj.isString or: obj.isKindOf(Symbol), {
             receiveAPI = API(obj);
             mountName = receiveAPI.name;
             ^this
         });
-        if(obj.isKindOf(API),{
+        if(obj.isKindOf(API), {
             receiveAPI = obj;
             mountName = receiveAPI.name;
             ^this
         });
         receiveAPI = API(this.name);
-        if(obj.isKindOf(Dictionary),{
+        if(obj.isKindOf(Dictionary), {
             receiveAPI.addAll(obj);
             mountName = "";// mount at root
         })
@@ -44,8 +44,8 @@ RPC { // Remote procedure call
     doesNotUnderstand { arg selector ... args;
         var path;
         path = RPC.selectorToPath(selector);
-        if(sendAPI.notNil,{
-            if(sendAPI.includes(path).not,{
+        if(sendAPI.notNil, {
+            if(sendAPI.includes(path).not, {
                 Exception("" + path + " is not a registered RPC path. (" + this + " got " + selector+")").throw;
                 //^super.doesNotUnderstand(*([selector] ++ args))
             })
@@ -59,8 +59,8 @@ RPC { // Remote procedure call
     }
     *selectorToPath { arg selector;
         var path;
-        path = selector.asString.replace("_","/");
-        if(path[0] != $/,{
+        path = selector.asString.replace("_", "/");
+        if(path[0] != $/, {
             path = "/" ++ path;
         });
         ^path.asSymbol

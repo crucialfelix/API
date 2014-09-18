@@ -28,7 +28,7 @@ var sf = { arg name;
 		m.addFunction(reply);
 		m.add(msg);
 		m.send( sf.value(name) );
-	},*/
+	}, */
 	freeAll: { arg reply, name=\default;
 		// this does all kinds of things
 		// unless/until somebody adds something else
