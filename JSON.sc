@@ -36,13 +36,13 @@ JSON {
         });
         if(obj.isNumber, {
             if(obj.isNaN, {
-                ^"NaN"
+                ^"null"
             });
             if(obj === inf, {
-                ^"Infinity"
+                ^"null"
             });
             if(obj === (-inf), {
-                ^"-Infinity"
+                ^"null"
             });
             ^obj.asString
         });
