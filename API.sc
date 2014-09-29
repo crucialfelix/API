@@ -2,7 +2,7 @@
 
 API {
 
-    classvar <all;
+    classvar <all, <>maxMsgSize=64512;
     var <name, functions;
     var oscResponders;
 
@@ -246,11 +246,14 @@ API {
             });
             if(m.notNil, {
                 api.async(path, args, { arg result;
-                    // reply is JSON {'result': result }
-                    addr.sendMsg('/API/reply', client_id, request_id,
-                        JSON.stringify( (result:result) ));
+                    var response = JSON.stringify((result: result));
+                    if(response.size <= maxMsgSize, {
+                      addr.sendMsg('/API/reply', client_id, request_id, response);
+                    }, {
+                      Error("OSC message is too big to send:" + (response.size)).throw;
+                    });
                 }, { arg error;
-                    addr.sendMsg('/API/error', client_id, request_id, error.errorString() );
+                    addr.sendMsg('/API/error', client_id, request_id, error.errorString());
                     error.reportError();
                 });
             });
