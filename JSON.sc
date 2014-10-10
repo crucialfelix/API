@@ -63,77 +63,68 @@ JSON {
         ^JSON.stringify(obj.asCompileString)
     }
 
+  // better would be
+  // http://json-sans-eval.googlecode.com/svn/trunk/src/json_sans_eval.js
+  // but that requires better regex
 
-    /*
+  // insecure JSON parser from JSON quark
+  *parse { arg s;
+    ^(this.prepareForJSonDict(s).interpret)
+  }
 
+	*getQuotedTextIndices {|s, quoteChar = "\""|
+		var quoteIndices;
 
-http://json-sans-eval.googlecode.com/svn/trunk/src/json_sans_eval.js
+		quoteIndices = s.findAll(quoteChar.asString);
+		// remove backquoted chars
+		quoteIndices = quoteIndices.select{|idx, i|
+			s[idx-1] != $\\
+		} ?? {[]};
 
-    *parse { arg string;
+		^quoteIndices.clump(2);
+	}
 
+	*getUnquotedTextIndices {|s, quoteChar = "\""|
+		^((([-1] ++ this.getQuotedTextIndices(s, quoteChar).flatten ++ [s.size]).clump(2)) +.t #[1, -1])
+	}
 
-    }
+	*getStructuredTextIndices { arg s;
+		var unquotedTextIndices;
 
-    getQuotedTextIndices {|quoteChar = "\""|
-        var quoteIndices;
+		unquotedTextIndices = this.getUnquotedTextIndices(s);
+		unquotedTextIndices = unquotedTextIndices.collect{|idxs|
+			this.getUnquotedTextIndices(s.copyRange(*idxs), $')  + idxs.first
+		}.flat.clump(2);
 
-        quoteIndices = this.findAll(quoteChar.asString);
-        // remove backquoted chars
-        quoteIndices = quoteIndices.select{|idx, i|
-            this[idx-1] != $\\
-        } ?? {[]};
+		^unquotedTextIndices
+	}
 
-        ^quoteIndices.clump(2);
-    }
+	*prepareForJSonDict { arg s;
+		var newString = s.deepCopy;
+		var idxs, nullIdxs;
+		idxs = this.getStructuredTextIndices(newString);
 
-    getUnquotedTextIndices {|quoteChar = "\""|
-        ^((([-1] ++ this.getQuotedTextIndices(quoteChar).flatten ++ [this.size]).clump(2)) +.t #[1, -1])
-    }
+		idxs.do{|pairs, i|
+			Interval(*pairs).do{|idx|
+				(newString[idx] == ${).if({newString[idx] = $(});
+				(newString[idx] == $}).if({newString[idx] = $)});
 
-    getStructuredTextIndices {
-        var unquotedTextIndices;
+				(newString[idx] == $:).if({
+					[(idxs[i-1].last)+1, pairs.first-1].do{|quoteIdx|
+						newString[quoteIdx] = $'
+					}
+				});
+			}
+		};
 
-        unquotedTextIndices = this.getUnquotedTextIndices;
-        unquotedTextIndices = unquotedTextIndices.collect{|idxs|
-            this.copyRange(*idxs).getUnquotedTextIndices($') + idxs.first
-        }.flat.clump(2);
+		// replace null with nil
+		nullIdxs = newString.findAll("null");
+		nullIdxs.do{|idx|
+			idxs.any{|pairs| idx.inRange(*pairs)}.if({
+				newString.overWrite("nil ", idx);
+			})
+		};
 
-        ^unquotedTextIndices
-    }
-
-    prepareForJSonDict {
-        var newString = this.deepCopy;
-        var idxs, nullIdxs;
-        idxs = newString.getStructuredTextIndices;
-
-        idxs.do{|pairs, i|
-            Interval(*pairs).do{|idx|
-                (newString[idx] == ${).if({newString[idx] = $(});
-                (newString[idx] == $}).if({newString[idx] = $)});
-
-                (newString[idx] == $:).if({
-                    [(idxs[i-1].last)+1, pairs.first-1].do{|quoteIdx|
-                        newString[quoteIdx] = $'
-                    }
-                });
-            }
-        };
-
-        // replace null with nil
-        nullIdxs = newString.findAll("null");
-        nullIdxs.do{|idx|
-            idxs.any{|pairs| idx.inRange(*pairs)}.if({
-                newString.overWrite("nil ", idx);
-            })
-
-        };
-
-        ^newString
-    }
-
-    jsonToDict {
-        ^(this.prepareForJSonDict.interpret)
-    }
-    */
-
+		^newString
+	}
 }
