@@ -72,59 +72,59 @@ JSON {
     ^(this.prepareForJSonDict(s).interpret)
   }
 
-	*getQuotedTextIndices {|s, quoteChar = "\""|
-		var quoteIndices;
+  *getQuotedTextIndices {|s, quoteChar = "\""|
+    var quoteIndices;
 
-		quoteIndices = s.findAll(quoteChar.asString);
-		// remove backquoted chars
-		quoteIndices = quoteIndices.select{|idx, i|
-			s[idx-1] != $\\
-		} ?? {[]};
+    quoteIndices = s.findAll(quoteChar.asString);
+    // remove backquoted chars
+    quoteIndices = quoteIndices.select{|idx, i|
+      s[idx-1] != $\\
+    } ?? {[]};
 
-		^quoteIndices.clump(2);
-	}
+    ^quoteIndices.clump(2);
+  }
 
-	*getUnquotedTextIndices {|s, quoteChar = "\""|
-		^((([-1] ++ this.getQuotedTextIndices(s, quoteChar).flatten ++ [s.size]).clump(2)) +.t #[1, -1])
-	}
+  *getUnquotedTextIndices {|s, quoteChar = "\""|
+    ^((([-1] ++ this.getQuotedTextIndices(s, quoteChar).flatten ++ [s.size]).clump(2)) +.t #[1, -1])
+  }
 
-	*getStructuredTextIndices { arg s;
-		var unquotedTextIndices;
+  *getStructuredTextIndices { arg s;
+    var unquotedTextIndices;
 
-		unquotedTextIndices = this.getUnquotedTextIndices(s);
-		unquotedTextIndices = unquotedTextIndices.collect{|idxs|
-			this.getUnquotedTextIndices(s.copyRange(*idxs), $')  + idxs.first
-		}.flat.clump(2);
+    unquotedTextIndices = this.getUnquotedTextIndices(s);
+    unquotedTextIndices = unquotedTextIndices.collect{|idxs|
+      this.getUnquotedTextIndices(s.copyRange(*idxs), $')  + idxs.first
+    }.flat.clump(2);
 
-		^unquotedTextIndices
-	}
+    ^unquotedTextIndices
+  }
 
-	*prepareForJSonDict { arg s;
-		var newString = s.deepCopy;
-		var idxs, nullIdxs;
-		idxs = this.getStructuredTextIndices(newString);
+  *prepareForJSonDict { arg s;
+    var newString = s.deepCopy;
+    var idxs, nullIdxs;
+    idxs = this.getStructuredTextIndices(newString);
 
-		idxs.do{|pairs, i|
-			Interval(*pairs).do{|idx|
-				(newString[idx] == ${).if({newString[idx] = $(});
-				(newString[idx] == $}).if({newString[idx] = $)});
+    idxs.do{|pairs, i|
+      Interval(*pairs).do{|idx|
+        (newString[idx] == ${).if({newString[idx] = $(});
+        (newString[idx] == $}).if({newString[idx] = $)});
 
-				(newString[idx] == $:).if({
-					[(idxs[i-1].last)+1, pairs.first-1].do{|quoteIdx|
-						newString[quoteIdx] = $'
-					}
-				});
-			}
-		};
+        (newString[idx] == $:).if({
+          [(idxs[i-1].last)+1, pairs.first-1].do{|quoteIdx|
+            newString[quoteIdx] = $'
+          }
+        });
+      }
+    };
 
-		// replace null with nil
-		nullIdxs = newString.findAll("null");
-		nullIdxs.do{|idx|
-			idxs.any{|pairs| idx.inRange(*pairs)}.if({
-				newString.overWrite("nil ", idx);
-			})
-		};
+    // replace null with nil
+    nullIdxs = newString.findAll("null");
+    nullIdxs.do{|idx|
+      idxs.any{|pairs| idx.inRange(*pairs)}.if({
+        newString.overWrite("nil ", idx);
+      })
+    };
 
-		^newString
-	}
+    ^newString
+  }
 }

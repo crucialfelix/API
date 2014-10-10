@@ -65,9 +65,4 @@ RPC { // Remote procedure call
         });
         ^path.asSymbol
     }
-
 }
-
-
-
-
